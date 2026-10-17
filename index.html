@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoiceCraft - Web Text-to-Speech Studio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts (Inter) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f6ff',
+              100: '#e0edff',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          },
+          keyframes: {
+            wave: {
+              '0%, 100%': { transform: 'scaleY(0.2)' },
+              '50%': { transform: 'scaleY(1.0)' },
+            },
+            pulseSlow: {
+              '0%, 100%': { opacity: 0.3 },
+              '50%': { opacity: 0.8 },
+            }
+          },
+          animation: {
+            wave: 'wave 1.2s ease-in-out infinite',
+            'pulse-slow': 'pulseSlow 3s ease-in-out infinite',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.5);
+      border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(107, 114, 128, 0.8);
+    }
+    .highlight-word {
+      background-color: rgba(59, 130, 246, 0.3);
+      color: #1d4ed8;
+      border-radius: 0.25rem;
+      padding: 0 0.15rem;
+      transition: all 0.15s ease;
+    }
+    .dark .highlight-word {
+      background-color: rgba(96, 165, 250, 0.35);
+      color: #93c5fd;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen font-sans antialiased transition-colors duration-200">
+
+  <!-- Main Layout Container -->
+  <div class="max-w-6xl mx-auto px-4 py-6 md:py-10 flex flex-col min-h-screen">
+    
+    <!-- Header -->
+    <header class="flex items-center justify-between pb-6 mb-6 border-b border-slate-200 dark:border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/25">
+          <i class="fa-solid font-bold fa-waveform-lines text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-300">
+            VoiceCraft
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Web Text-to-Speech Studio</p>
+        </div>
+      </div>
+
+      <!-- Header Action Controls -->
+      <div class="flex items-center gap-2">
+        <button id="themeToggleBtn" title="Toggle Theme" class="p-2.5 rounded-xl bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition">
+          <i class="fa-solid fa-moon dark:hidden"></i>
+          <i class="fa-solid fa-sun hidden dark:inline"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+      
+      <!-- Left / Main Panel: Text Input & Display -->
+      <div class="lg:col-span-7 flex flex-col gap-4">
+        
+        <!-- Textarea Studio Box -->
+        <div class="bg-white dark:bg-slate-800/90 rounded-2xl p-5 shadow-sm border border-slate-200/80 dark:border-slate-700/60 flex flex-col flex-grow relative">
+          
+          <div class="flex items-center justify-between mb-3">
+            <label for="textInput" class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-align-left text-blue-500"></i> Script Input
+            </label>
+            
+            <div class="flex items-center gap-2">
+              <button id="sampleTextBtn" class="text-xs text-blue-600 dark:text-blue-400 hover:underline px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-950/40 transition">
+                <i class="fa-solid fa-lightbulb mr-1"></i> Sample Text
+              </button>
+              <button id="clearTextBtn" class="text-xs text-slate-500 hover:text-red-500 px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                <i class="fa-solid fa-trash-can mr-1"></i> Clear
+              </button>
+            </div>
+          </div>
+
+          <!-- Editable Text Box -->
+          <div class="relative flex-grow min-h-[220px] md:min-h-[280px]">
+            <textarea id="textInput" 
+              class="w-full h-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none leading-relaxed text-base"
+              placeholder="Type or paste text here to synthesize speech..."></textarea>
+            
+            <!-- Dynamic Highlight Overlay Display (Active when Speech Plays) -->
+            <div id="speechDisplayOverlay" 
+              class="hidden absolute inset-0 p-4 rounded-xl border border-blue-300 dark:border-blue-800 bg-white/95 dark:bg-slate-900/95 text-slate-800 dark:text-slate-100 overflow-y-auto leading-relaxed text-base">
+            </div>
+          </div>
+
+          <!-- Character & Word Count Toolbar -->
+          <div class="flex items-center justify-between mt-3 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-700/50 pt-3">
+            <div class="flex gap-4">
+              <span><strong id="charCount" class="font-medium text-slate-700 dark:text-slate-300">0</strong> characters</span>
+              <span><strong id="wordCount" class="font-medium text-slate-700 dark:text-slate-300">0</strong> words</span>
+            </div>
+            <span id="speechProgressText" class="text-blue-600 dark:text-blue-400 font-medium hidden sm:inline">Ready</span>
+          </div>
+
+        </div>
+
+        <!-- Audio Visualizer & Player Dock -->
+        <div class="bg-white dark:bg-slate-800/90 rounded-2xl p-5 shadow-sm border border-slate-200/80 dark:border-slate-700/60">
+          
+          <!-- Visualizer & Status Row -->
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/50">
+            
+            <div class="flex items-center gap-3">
+              <div id="statusIndicator" class="w-3 h-3 rounded-full bg-slate-400"></div>
+              <span id="statusLabel" class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Idle</span>
+            </div>
+
+            <!-- Waveform Animation -->
+            <div id="waveformContainer" class="flex items-center gap-1.5 h-8 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-900/70">
+              <div class="w-1 bg-blue-500 h-full rounded-full opacity-40 wave-bar"></div>
+              <div class="w-1 bg-blue-500 h-full rounded-full opacity-40 wave-bar"></div>
+              <div class="w-1 bg-indigo-500 h-full rounded-full opacity-40 wave-bar"></div>
+              <div class="w-1 bg-indigo-500 h-full rounded-full opacity-40 wave-bar"></div>
+              <div class="w-1 bg-purple-500 h-full rounded-full opacity-40 wave-bar"></div>
+              <div class="w-1 bg-purple-500 h-full rounded-full opacity-40 wave-bar"></div>
+              <div class="w-1 bg-blue-500 h-full rounded-full opacity-40 wave-bar"></div>
+            </div>
+          </div>
+
+          <!-- Playback Controls Bar -->
+          <div class="flex flex-wrap items-center justify-center sm:justify-between gap-3">
+            
+            <div class="flex items-center gap-2">
+              <!-- Speak / Play Button -->
+              <button id="speakBtn" class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium px-5 py-2.5 rounded-xl shadow-md shadow-blue-500/20 active:scale-95 transition">
+                <i class="fa-solid fa-play"></i>
+                <span>Speak</span>
+              </button>
+
+              <!-- Pause Button -->
+              <button id="pauseBtn" disabled class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition" title="Pause Speech">
+                <i class="fa-solid fa-pause"></i>
+              </button>
+
+              <!-- Stop Button -->
+              <button id="stopBtn" disabled class="p-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition" title="Stop Speech">
+                <i class="fa-solid fa-square"></i>
+              </button>
+            </div>
+
+            <!-- Active Voice Info Pill -->
+            <div class="text-xs bg-slate-100 dark:bg-slate-700/60 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 max-w-[200px] truncate">
+              <i class="fa-solid fa-microphone text-blue-500 mr-1.5"></i>
+              <span id="activeVoicePill">Default Voice</span>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Right Panel: Voice Settings & Presets -->
+      <div class="lg:col-span-5 flex flex-col gap-5">
+        
+        <!-- Voice Style Presets -->
+        <div class="bg-white dark:bg-slate-800/90 rounded-2xl p-5 shadow-sm border border-slate-200/80 dark:border-slate-700/60">
+          <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i> Mood Presets
+          </h2>
+          
+          <div class="grid grid-cols-2 gap-2.5" id="presetsGrid">
+            <button data-preset="normal" class="preset-btn active p-3 rounded-xl border border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-left transition hover:border-blue-400">
+              <div class="text-xs font-bold text-blue-600 dark:text-blue-400">Natural / Normal</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">Default pitch & speed</div>
+            </button>
+
+            <button data-preset="excited" class="preset-btn p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 text-left transition">
+              <div class="text-xs font-bold text-slate-700 dark:text-slate-200">Energetic 🚀</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">High pitch, faster rate</div>
+            </button>
+
+            <button data-preset="calm" class="preset-btn p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 text-left transition">
+              <div class="text-xs font-bold text-slate-700 dark:text-slate-200">Calm / Meditative 🧘</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">Lower pitch, slower rate</div>
+            </button>
+
+            <button data-preset="robot" class="preset-btn p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 text-left transition">
+              <div class="text-xs font-bold text-slate-700 dark:text-slate-200">Robot / Cyber 🤖</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">Monotone pitch, slow</div>
+            </button>
+
+            <button data-preset="news" class="preset-btn p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 text-left transition">
+              <div class="text-xs font-bold text-slate-700 dark:text-slate-200">News Anchor 🎙️</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">Clear pitch, steady rate</div>
+            </button>
+
+            <button data-preset="storyteller" class="preset-btn p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 text-left transition">
+              <div class="text-xs font-bold text-slate-700 dark:text-slate-200">Storyteller 📚</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">Slightly deep, express rate</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Audio Tuning Sliders & Voice Selection -->
+        <div class="bg-white dark:bg-slate-800/90 rounded-2xl p-5 shadow-sm border border-slate-200/80 dark:border-slate-700/60 flex flex-col gap-5">
+          
+          <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-blue-500"></i> Voice Controls
+          </h2>
+
+          <!-- Voice Selector Dropdown -->
+          <div>
+            <label for="voiceSelect" class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+              Select Voice
+            </label>
+            <div class="relative">
+              <select id="voiceSelect" class="w-full p-2.5 pr-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                <option value="">Loading speech voices...</option>
+              </select>
+              <div class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <i class="fa-solid fa-chevron-down text-xs"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Speed / Rate Slider -->
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-medium text-slate-600 dark:text-slate-300">Speed / Rate</span>
+              <span id="rateValue" class="font-bold text-blue-600 dark:text-blue-400">1.0x</span>
+            </div>
+            <input type="range" id="rateInput" min="0.5" max="2" step="0.1" value="1.0" class="w-full accent-blue-600 cursor-pointer">
+            <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+              <span>0.5x</span>
+              <span>1.0x</span>
+              <span>2.0x</span>
+            </div>
+          </div>
+
+          <!-- Pitch Slider -->
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-medium text-slate-600 dark:text-slate-300">Pitch</span>
+              <span id="pitchValue" class="font-bold text-blue-600 dark:text-blue-400">1.0</span>
+            </div>
+            <input type="range" id="pitchInput" min="0.5" max="1.5" step="0.1" value="1.0" class="w-full accent-blue-600 cursor-pointer">
+            <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+              <span>Low (0.5)</span>
+              <span>Normal (1.0)</span>
+              <span>High (1.5)</span>
+            </div>
+          </div>
+
+          <!-- Volume Slider -->
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-medium text-slate-600 dark:text-slate-300">Volume</span>
+              <span id="volumeValue" class="font-bold text-blue-600 dark:text-blue-400">100%</span>
+            </div>
+            <input type="range" id="volumeInput" min="0" max="1" step="0.05" value="1.0" class="w-full accent-blue-600 cursor-pointer">
+            <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+              <span>Mute</span>
+              <span>50%</span>
+              <span>100%</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 text-xs font-medium z-50">
+      <i class="fa-solid fa-circle-info text-blue-400 dark:text-blue-600"></i>
+      <span id="toastMessage">Notification message</span>
+    </div>
+
+  </div>
+
+  <script>
+    // System & Synth References
+    const synth = window.speechSynthesis;
+    let voices = [];
+    let currentUtterance = null;
+    let isSpeaking = false;
+    let isPaused = false;
+
+    // DOM Elements
+    const textInput = document.getElementById('textInput');
+    const speechDisplayOverlay = document.getElementById('speechDisplayOverlay');
+    const charCount = document.getElementById('charCount');
+    const wordCount = document.getElementById('wordCount');
+    const speechProgressText = document.getElementById('speechProgressText');
+
+    const voiceSelect = document.getElementById('voiceSelect');
+    const rateInput = document.getElementById('rateInput');
+    const rateValue = document.getElementById('rateValue');
+    const pitchInput = document.getElementById('pitchInput');
+    const pitchValue = document.getElementById('pitchValue');
+    const volumeInput = document.getElementById('volumeInput');
+    const volumeValue = document.getElementById('volumeValue');
+
+    const speakBtn = document.getElementById('speakBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const activeVoicePill = document.getElementById('activeVoicePill');
+
+    const statusIndicator = document.getElementById('statusIndicator');
+    const statusLabel = document.getElementById('statusLabel');
+    const waveBars = document.querySelectorAll('.wave-bar');
+    const presetBtns = document.querySelectorAll('.preset-btn');
+    const sampleTextBtn = document.getElementById('sampleTextBtn');
+    const clearTextBtn = document.getElementById('clearTextBtn');
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+    // Sample Texts
+    const samples = [
+      "Welcome to VoiceCraft Studio! Experience crystal-clear speech synthesis powered directly inside your modern browser.",
+      "In a world where technology advances at breakneck speeds, human-like voice synthesis empowers accessible digital communications for everyone.",
+      "The fast golden retriever bounded gracefully over the peaceful garden fence while birds sang merrily under the morning sun."
+    ];
+
+    // Initialize Voices
+    function loadVoices() {
+      if (!synth) {
+        showToast("Speech Synthesis is not supported in this browser.");
+        return;
+      }
+
+      voices = synth.getVoices();
+      
+      // Sort voices: Default/English first
+      voices.sort((a, b) => {
+        if (a.default) return -1;
+        if (b.default) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      voiceSelect.innerHTML = '';
+      
+      if (voices.length === 0) {
+        voiceSelect.innerHTML = '<option value="">No voices available</option>';
+        return;
+      }
+
+      voices.forEach((voice, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `${voice.name} (${voice.lang})${voice.default ? ' — Default' : ''}`;
+        voiceSelect.appendChild(option);
+      });
+
+      // Set default selected voice
+      const defaultIndex = voices.findIndex(v => v.default) !== -1 ? voices.findIndex(v => v.default) : 0;
+      voiceSelect.value = defaultIndex;
+      updateActiveVoicePill();
+    }
+
+    // Dynamic Voice Pill Update
+    function updateActiveVoicePill() {
+      const selectedIndex = voiceSelect.value;
+      if (voices[selectedIndex]) {
+        activeVoicePill.textContent = voices[selectedIndex].name;
+      }
+    }
+
+    // Text Counter Update
+    function updateTextStats() {
+      const text = textInput.value;
+      charCount.textContent = text.length;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      wordCount.textContent = words;
+    }
+
+    // Speech Controls & Logic
+    function speakText() {
+      if (!synth) return;
+
+      if (synth.speaking && isPaused) {
+        synth.resume();
+        isPaused = false;
+        updateUIState('speaking');
+        return;
+      }
+
+      // Clear any prior active speech
+      synth.cancel();
+
+      const text = textInput.value.trim();
+      if (!text) {
+        showToast("Please enter some text to speak!");
+        return;
+      }
+
+      currentUtterance = new SpeechSynthesisUtterance(text);
+
+      // Apply Voice, Pitch, Rate, Volume
+      const selectedIndex = voiceSelect.value;
+      if (voices[selectedIndex]) {
+        currentUtterance.voice = voices[selectedIndex];
+      }
+      currentUtterance.rate = parseFloat(rateInput.value);
+      currentUtterance.pitch = parseFloat(pitchInput.value);
+      currentUtterance.volume = parseFloat(volumeInput.value);
+
+      // Handle Boundary Event for Word Highlighting
+      setupWordHighlighting(text);
+
+      currentUtterance.onstart = () => {
+        isSpeaking = true;
+        isPaused = false;
+        updateUIState('speaking');
+      };
+
+      currentUtterance.onend = () => {
+        isSpeaking = false;
+        isPaused = false;
+        updateUIState('idle');
+      };
+
+      currentUtterance.onerror = (event) => {
+        console.error('Speech Synthesis Error:', event);
+        isSpeaking = false;
+        isPaused = false;
+        updateUIState('idle');
+      };
+
+      synth.speak(currentUtterance);
+    }
+
+    function pauseSpeech() {
+      if (synth.speaking && !isPaused) {
+        synth.pause();
+        isPaused = true;
+        updateUIState('paused');
+      } else if (isPaused) {
+        synth.resume();
+        isPaused = false;
+        updateUIState('speaking');
+      }
+    }
+
+    function stopSpeech() {
+      if (synth.speaking || isPaused) {
+        synth.cancel();
+        isSpeaking = false;
+        isPaused = false;
+        updateUIState('idle');
+      }
+    }
+
+    // Word Highlighting setup
+    function setupWordHighlighting(fullText) {
+      // Prepare overlay HTML with wrapped word spans
+      const words = fullText.split(/(\s+)/);
+      let charOffset = 0;
+      
+      const spanWrappedHTML = words.map((chunk) => {
+        if (/^\s+$/.test(chunk)) {
+          charOffset += chunk.length;
+          return chunk;
+        } else {
+          const span = `<span data-start="${charOffset}" data-end="${charOffset + chunk.length}">${escapeHTML(chunk)}</span>`;
+          charOffset += chunk.length;
+          return span;
+        }
+      }).join('');
+
+      speechDisplayOverlay.innerHTML = spanWrappedHTML;
+
+      if (currentUtterance) {
+        currentUtterance.onboundary = (event) => {
+          if (event.name === 'word') {
+            const charIndex = event.charIndex;
+            highlightWordAtIndex(charIndex);
+          }
+        };
+      }
+    }
+
+    function highlightWordAtIndex(charIndex) {
+      const spans = speechDisplayOverlay.querySelectorAll('span[data-start]');
+      spans.forEach(span => {
+        const start = parseInt(span.getAttribute('data-start'));
+        const end = parseInt(span.getAttribute('data-end'));
+
+        if (charIndex >= start && charIndex < end) {
+          span.classList.add('highlight-word');
+          span.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+          span.classList.remove('highlight-word');
+        }
+      });
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+
+    // State Visual UI Update
+    function updateUIState(state) {
+      if (state === 'speaking') {
+        statusIndicator.className = 'w-3 h-3 rounded-full bg-emerald-500 animate-pulse';
+        statusLabel.textContent = 'Speaking';
+        speechProgressText.textContent = 'Playing speech...';
+        
+        speakBtn.innerHTML = '<i class="fa-solid fa-redo"></i><span>Restart</span>';
+        pauseBtn.disabled = false;
+        stopBtn.disabled = false;
+
+        // Overlay visible for dynamic text sync
+        speechDisplayOverlay.classList.remove('hidden');
+
+        // Start waveform animation
+        waveBars.forEach((bar, i) => {
+          bar.style.animation = `wave 1.2s ease-in-out infinite ${i * 0.15}s`;
+          bar.style.opacity = '1';
+        });
+
+      } else if (state === 'paused') {
+        statusIndicator.className = 'w-3 h-3 rounded-full bg-amber-500';
+        statusLabel.textContent = 'Paused';
+        speechProgressText.textContent = 'Speech paused';
+
+        pauseBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+        pauseBtn.title = 'Resume Speech';
+
+        // Pause waveform
+        waveBars.forEach(bar => {
+          bar.style.animationPlayState = 'paused';
+        });
+
+      } else { // Idle
+        statusIndicator.className = 'w-3 h-3 rounded-full bg-slate-400';
+        statusLabel.textContent = 'Idle';
+        speechProgressText.textContent = 'Ready';
+
+        speakBtn.innerHTML = '<i class="fa-solid fa-play"></i><span>Speak</span>';
+        pauseBtn.disabled = true;
+        stopBtn.disabled = true;
+        pauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+        pauseBtn.title = 'Pause Speech';
+
+        speechDisplayOverlay.classList.add('hidden');
+
+        // Stop waveform
+        waveBars.forEach(bar => {
+          bar.style.animation = 'none';
+          bar.style.opacity = '0.4';
+        });
+      }
+    }
+
+    // Apply Presets
+    function applyPreset(presetType) {
+      let pitch = 1.0;
+      let rate = 1.0;
+
+      switch(presetType) {
+        case 'excited':
+          pitch = 1.3;
+          rate = 1.25;
+          break;
+        case 'calm':
+          pitch = 0.8;
+          rate = 0.8;
+          break;
+        case 'robot':
+          pitch = 0.5;
+          rate = 0.85;
+          break;
+        case 'news':
+          pitch = 1.0;
+          rate = 1.1;
+          break;
+        case 'storyteller':
+          pitch = 0.9;
+          rate = 0.95;
+          break;
+        case 'normal':
+        default:
+          pitch = 1.0;
+          rate = 1.0;
+          break;
+      }
+
+      // Set Sliders
+      pitchInput.value = pitch;
+      pitchValue.textContent = pitch.toFixed(1);
+
+      rateInput.value = rate;
+      rateValue.textContent = rate.toFixed(1) + 'x';
+
+      // Highlight Active Preset Card
+      presetBtns.forEach(btn => {
+        if (btn.getAttribute('data-preset') === presetType) {
+          btn.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-950/40');
+          btn.classList.remove('border-slate-200', 'dark:border-slate-700');
+        } else {
+          btn.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-950/40');
+          btn.classList.add('border-slate-200', 'dark:border-slate-700');
+        }
+      });
+
+      showToast(`Applied preset: ${presetType.toUpperCase()}`);
+    }
+
+    // Toast Alert Trigger
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toastMessage');
+      toastMessage.textContent = msg;
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // Event Listeners
+    window.onload = () => {
+      // Speech Synthesis load events handling
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = loadVoices;
+      }
+      loadVoices();
+
+      // Populate text with initial placeholder script
+      textInput.value = "VoiceCraft brings your text to life! Choose from different pitch styles, speech rates, and natural voices.";
+      updateTextStats();
+    };
+
+    textInput.addEventListener('input', updateTextStats);
+
+    voiceSelect.addEventListener('change', updateActiveVoicePill);
+
+    // Range Inputs
+    rateInput.addEventListener('input', (e) => {
+      rateValue.textContent = parseFloat(e.target.value).toFixed(1) + 'x';
+    });
+
+    pitchInput.addEventListener('input', (e) => {
+      pitchValue.textContent = parseFloat(e.target.value).toFixed(1);
+    });
+
+    volumeInput.addEventListener('input', (e) => {
+      const vol = Math.round(e.target.value * 100);
+      volumeValue.textContent = `${vol}%`;
+    });
+
+    // Buttons
+    speakBtn.addEventListener('click', speakText);
+    pauseBtn.addEventListener('click', pauseSpeech);
+    stopBtn.addEventListener('click', stopSpeech);
+
+    // Preset Clicks
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const preset = btn.getAttribute('data-preset');
+        applyPreset(preset);
+      });
+    });
+
+    // Sample Text Loader
+    sampleTextBtn.addEventListener('click', () => {
+      const randomSample = samples[Math.floor(Math.random() * samples.length)];
+      textInput.value = randomSample;
+      updateTextStats();
+      showToast("Loaded sample text");
+    });
+
+    // Clear Text
+    clearTextBtn.addEventListener('click', () => {
+      textInput.value = '';
+      updateTextStats();
+      stopSpeech();
+    });
+
+    // Dark/Light Theme Toggle
+    themeToggleBtn.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+    });
+  </script>
+</body>
+</html>
